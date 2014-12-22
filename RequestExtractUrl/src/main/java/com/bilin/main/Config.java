@@ -12,14 +12,13 @@ import java.net.URI;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Config {
     private Map<String, Set<String>> keywordsMap = new HashMap<String, Set<String>>();
     private static Map<String, Integer> proper = new HashMap<String, Integer>();
     private static ArrayList<String> logFormat = new ArrayList<String>();
     private static ArrayList<String> campaigns = new ArrayList<String>();
+    private static Map<String,Set<String>> black_list_req = new HashMap<String,Set<String>>();
     private static Map<Integer, Set<String>> black_list = new HashMap<Integer, Set<String>>();
     private static final String COMMA = ",";
     private static final String KEYWORDS = "keywords.";
@@ -69,6 +68,8 @@ public class Config {
                 StringTokenizer log_format = new StringTokenizer(props.getProperty(logType), Config.COMMA);
                 StringTokenizer format = new StringTokenizer(props.getProperty("result_format"), Config.COMMA);
                 StringTokenizer cps = new StringTokenizer(props.getProperty("campaigns"), Config.COMMA);
+                StringTokenizer blk_list = new StringTokenizer(props.getProperty("black_list_req"),Config.COMMA);
+               
                 length = 0;
                 String item;
                 proper.clear();
@@ -119,6 +120,24 @@ public class Config {
                 while (cps.hasMoreTokens()) {
                     campaigns.add(cps.nextToken());
                 }
+                black_list_req.clear();
+                while (blk_list.hasMoreTokens()) {
+                	String list_item = blk_list.nextToken();
+                	String[] lists = list_item.split("\\.");
+                	String top_domain;
+                	if(lists.length > 2)
+                		top_domain = lists[lists.length-2].concat(".").concat(lists[lists.length-1]);
+                	else
+                		top_domain = list_item;
+                	
+                	if(black_list_req.containsKey(top_domain))
+                		black_list_req.get(top_domain).add(list_item);
+                	else{
+                		Set<String> init = new HashSet<String>();
+                		init.add(list_item);
+                		black_list_req.put(top_domain, init);
+                	}
+                }
             } finally {
                 in.close();
             }
@@ -153,5 +172,9 @@ public class Config {
 
     public static Map<Integer, Set<String>> getBlack_list() {
         return black_list;
+    }
+    
+    public static Map<String,Set<String>> getblack_list_req(){
+    	return black_list_req;
     }
 }

@@ -1,4 +1,3 @@
-import java.sql.Timestamp;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,6 +33,8 @@ public class Test {
             Matcher m = p.matcher(url);
             while (m.find())
                 System.out.println(m.group() + " " + m.start() + " " + m.end());
+            
         }
+        System.out.println("signin.ebay.com".split("\\.").length);
     }
 }

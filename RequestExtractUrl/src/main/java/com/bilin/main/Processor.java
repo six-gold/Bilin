@@ -11,7 +11,7 @@ public class Processor {
     public static void main(String[] args) throws Exception {
         if (4 > args.length) {
             System.err.println("Missing required parameter!");
-            System.err.println("parameters: input_path output_path logType properties_file_path");
+            System.err.println("parameters: req_input_path imp_input_path output_path logType properties_file_path rate control");
             System.exit(2);
         }
         runJob(args);
