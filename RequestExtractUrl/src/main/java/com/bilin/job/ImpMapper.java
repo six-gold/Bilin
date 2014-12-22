@@ -19,7 +19,9 @@ public class ImpMapper extends Mapper<LongWritable, Text, Text, Text> {
 	ArrayList<String> format = null;
 	ArrayList<String> campaign = null;
 	MultipleOutputs<Text,Text> multipleOutputs;
-	
+	private static enum WrongLog {
+        WRONGLOG, OUTBOUND
+	}
 	@Override
 	protected void map(LongWritable key, Text value,
 			Mapper<LongWritable, Text, Text, Text>.Context context)
@@ -29,7 +31,7 @@ public class ImpMapper extends Mapper<LongWritable, Text, Text, Text> {
 		if(str.size() < lineOfLog.size()){
 			System.out.println("line length: "+str.size() + "  proper length: " + lineOfLog.size());
 			System.out.println(value.toString());
-			context.getCounter("Error_log", "shorter_then_require").increment(1);
+			context.getCounter(WrongLog.WRONGLOG).increment(1);
 		}else{
 			String campaign_id_log=str.get(lineOfLog.get("campaign_id"));
 			int cp = 0;
@@ -90,7 +92,7 @@ public class ImpMapper extends Mapper<LongWritable, Text, Text, Text> {
 				multipleOutputs.write(new Text(line.substring(0,line.length()-1)), new Text("USD"),"prelytix/imp_"+DateTransformer.getDate());
 //				context.write(new Text(line.substring(0,line.length()-1)), NullWritable.get());
 			}else
-				context.getCounter("Error_log", "imp_put_away").increment(1);
+				context.getCounter(WrongLog.OUTBOUND).increment(1);
 		}
 	}
 

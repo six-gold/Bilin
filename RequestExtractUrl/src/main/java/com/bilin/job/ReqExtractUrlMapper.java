@@ -2,7 +2,6 @@ package com.bilin.job;
 
 import com.bilin.main.Config;
 
-import org.apache.hadoop.hdfs.DFSClient;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -15,13 +14,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Random;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Set;
 
 
 public class ReqExtractUrlMapper extends Mapper<LongWritable, Text, Text, Text> {
 
     private ArrayList<String> str = new ArrayList<String>();
+    private Map<String,Set<String>> black_list_req = null;
+    private Set<String> keys = null;
     private Map<String, Integer> lineOfLog = null;
     private ArrayList<String> format = null;
     private MultipleOutputs<Text, Text> multipleOutputs;
@@ -36,7 +36,26 @@ public class ReqExtractUrlMapper extends Mapper<LongWritable, Text, Text, Text> 
         Config.getInstance().loadConfig(logType, filePath);
         format = Config.getFormatLog();
         lineOfLog = Config.getLineOfLog();
+        black_list_req = Config.getblack_list_req();
+        keys = black_list_req.keySet();
         swtich = context.getConfiguration().get("switch");
+    }
+    
+    public boolean is_blacked(String domain){
+    	
+    	String[] splited_domain = domain.split("\\.");
+    	int len = splited_domain.length;
+    	
+    	if(len > 2){
+    		String top_domain = splited_domain[len-2].concat(".").concat(splited_domain[len-1]);
+    		if(keys.contains(top_domain))
+    			if(black_list_req.get(top_domain).contains(top_domain))
+    				return true;
+    			else
+    				return black_list_req.get(top_domain).contains(domain);
+    	}else if(keys.contains(domain))
+       		return black_list_req.get(domain).contains(domain);
+    	return false;
     }
 
     @Override
@@ -67,62 +86,63 @@ public class ReqExtractUrlMapper extends Mapper<LongWritable, Text, Text, Text> 
             int number = new Random().nextInt(100) + 1;
 
             int length = str.get(lineOfLog.get("url")).length();
-            if (number <= rate && length <= 250) {
+            if (number <= rate && length <= 250){
+            	if(!is_blacked(str.get(lineOfLog.get("domain")))) {
 
-                ArrayList<String> format_log = new ArrayList<String>();
-                format_log.clear();
-                for (int i = 0; i < format.size() - 1; i++) {
-                    format_log.add("");
-                }
-                int i = 0;
-                for (String item : format) {
-                    if (lineOfLog.containsKey(item)) {
-                        format_log.set(i, str.get(lineOfLog.get(item)));
-                    }
-                    i++;
-                }
+            		ArrayList<String> format_log = new ArrayList<String>();
+            		format_log.clear();
+            		for (int i = 0; i < format.size() - 1; i++) {
+            			format_log.add("");
+            		}
+            		int i = 0;
+            		for (String item : format) {
+            			if (lineOfLog.containsKey(item)) {
+            				format_log.set(i, str.get(lineOfLog.get(item)));
+            			}
+            			i++;
+            		}
 
-                //time
-                String ESTTime = DateTransformer.UTCToEST(str.get(lineOfLog.get("date_time")), str.get(lineOfLog.get("time_zone")));
-                format_log.set(format.indexOf("date_time"), ESTTime);
-                // geo
-                ArrayList<String> geo = Spliter.splits(str.get(lineOfLog.get("geo")), "|");
-                if (geo.size() == 4) {
-                    for (int j = 0; j < 4; j++) {
-                        format_log.set(format.indexOf("user_country") + j, geo.get(j));
-                    }
-                }
-                format_log.set(format.indexOf("ip"), format_log.get(format.indexOf("user_ip")));
-                format_log.set(format.indexOf("country"), format_log.get(format.indexOf("user_country")));
-                format_log.set(format.indexOf("region"), format_log.get(format.indexOf("user_region")));
-//                format_log.set(format.indexOf("time_zone"),"UTC-5");
+            		//time
+            		String ESTTime = DateTransformer.UTCToEST(str.get(lineOfLog.get("date_time")), str.get(lineOfLog.get("time_zone")));
+            		format_log.set(format.indexOf("date_time"), ESTTime);
+            		// geo
+            		ArrayList<String> geo = Spliter.splits(str.get(lineOfLog.get("geo")), "|");
+            		if (geo.size() == 4) {
+            			for (int j = 0; j < 4; j++) {
+            				format_log.set(format.indexOf("user_country") + j, geo.get(j));
+            			}
+            		}
+            		format_log.set(format.indexOf("ip"), format_log.get(format.indexOf("user_ip")));
+            		format_log.set(format.indexOf("country"), format_log.get(format.indexOf("user_country")));
+            		format_log.set(format.indexOf("region"), format_log.get(format.indexOf("user_region")));
 
-                // no flash
-                String flash = str.get(lineOfLog.get("is_flash_allowed"));
-                if (flash.equalsIgnoreCase("true"))
-                    format_log.set(format.indexOf("with_flash"), "yes");
-                else if (flash.equalsIgnoreCase("false"))
-                    format_log.set(format.indexOf("with_flash"), "no");
-                else
-                    format_log.set(format.indexOf("with_flash"), flash);
+            		// no flash
+            		String flash = str.get(lineOfLog.get("is_flash_allowed"));
+                	if (flash.equalsIgnoreCase("true"))
+                		format_log.set(format.indexOf("with_flash"), "yes");
+                	else if (flash.equalsIgnoreCase("false"))
+                		format_log.set(format.indexOf("with_flash"), "no");
+                	else
+                		format_log.set(format.indexOf("with_flash"), flash);
 
-                String uuid = str.get(lineOfLog.get("uuid"));
-                if (uuid.isEmpty())
-                    format_log.set(format.indexOf("with_sync"), "0");
-                else
-                    format_log.set(format.indexOf("with_sync"), "1");
+                	String uuid = str.get(lineOfLog.get("uuid"));
+                	if (uuid.isEmpty())
+                		format_log.set(format.indexOf("with_sync"), "0");
+                	else
+                		format_log.set(format.indexOf("with_sync"), "1");
 
-//			format_log.set(format.indexOf("currency"),"USD");
 
-                String line = "";
-                for (String val : format_log) {
-                    line = line.concat(val.concat("\t"));
-                }
-                multipleOutputs.write(new Text(line.substring(0, line.length() - 1)), new Text("USD"),
+                	String line = "";
+                	for (String val : format_log) {
+                		line = line.concat(val.concat("\t"));
+                	}
+                	multipleOutputs.write(new Text(line.substring(0, line.length() - 1)), new Text("USD"),
                         "prelytix/req_" + DateTransformer.getDate());
-            } else {
-                context.getCounter("NOT_USED_LOG", "req_put_away").increment(1);
-            }
+            	} else{
+            		context.getCounter(WrongLog.BLACKLIST).increment(1);
+            	}
+            } else 
+            	context.getCounter(WrongLog.OUTBOUND).increment(1);
         }
         //=============================================================
 

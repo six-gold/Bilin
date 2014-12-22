@@ -19,7 +19,7 @@ public class ReqExtractUrlReducer extends Reducer<Text, Text, Text, Text> {
     protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
         long set_id = Integer.parseInt(getFileName(key));
         int url_count = 0;
-        for (Text value : values) {
+        for (@SuppressWarnings("unused") Text value : values) {
             url_count++;
         }
         // adding list type to result
