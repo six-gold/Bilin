@@ -1,8 +1,9 @@
 package com.bilin.job;
 
 
-import com.bilin.main.Config;
-import com.bilin.utils.Spliter;
+import java.io.IOException;
+import java.util.ArrayList;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -14,8 +15,8 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
-import java.io.IOException;
-import java.util.ArrayList;
+import com.bilin.main.Config;
+import com.bilin.utils.Spliter;
 
 public class CountDomain {
     public static class CountDomainMapper extends Mapper<LongWritable, Text, Text, IntWritable> {
