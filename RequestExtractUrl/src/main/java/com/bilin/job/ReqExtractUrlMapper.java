@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class ReqExtractUrlMapper extends Mapper<LongWritable, Text, Text, Text> {
@@ -27,7 +29,7 @@ public class ReqExtractUrlMapper extends Mapper<LongWritable, Text, Text, Text> 
     private MultipleOutputs<Text, Text> multipleOutputs;
     private String swtich;
     private static enum WrongLog {
-        WRONGLOG, OUTBOUND, BLACKLIST
+        WRONGLOG, OUTBOUND, BLACKLIST, EMPTY
     }
 
     public void loadConfig(Context context) {
@@ -43,20 +45,21 @@ public class ReqExtractUrlMapper extends Mapper<LongWritable, Text, Text, Text> 
     
     public boolean is_blacked(String domain){
     	
-    	String[] splited_domain = domain.split("\\.");
-    	int len = splited_domain.length;
-    	
-    	if(len > 2){
-    		String top_domain = splited_domain[len-2].concat(".").concat(splited_domain[len-1]);
+//    	Pattern p = Pattern.compile("[^.]*?.(com|cn|net|org|biz|info|cc|tv)",Pattern.CASE_INSENSITIVE);
+    	Pattern pattern = Pattern.compile("[^\\.]+(\\.com|\\.net|\\.cn|\\.org|\\.biz|\\.info|\\.cc|\\.tv"
+    			+ "|\\.de|\\.fm|\\.eu|\\.es|\\.fi|\\.in|\\.co|\\.ga|\\.me|\\.io)");
+    	Matcher matcher = pattern.matcher(domain);
+    	while(matcher.find()){
+    		String top_domain = matcher.group();
     		if(keys.contains(top_domain))
     			if(black_list_req.get(top_domain).contains(top_domain))
     				return true;
     			else
     				return black_list_req.get(top_domain).contains(domain);
-    	}else if(keys.contains(domain))
-       		return black_list_req.get(domain).contains(domain);
+    	}
     	return false;
     }
+    
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
@@ -67,7 +70,7 @@ public class ReqExtractUrlMapper extends Mapper<LongWritable, Text, Text, Text> 
         for (String item : format)
             line_file = line_file.concat(item.concat("\t"));
 
-        multipleOutputs.write(new Text(line_file.substring(0, line_file.length() - 10)), new Text("currency"), "prelytix/req_" + DateTransformer.getDate());
+        multipleOutputs.write(new Text(line_file.substring(0, line_file.length() - 10)), new Text("currency"), "prelytix/req");
     }
 
 
@@ -87,7 +90,10 @@ public class ReqExtractUrlMapper extends Mapper<LongWritable, Text, Text, Text> 
 
             int length = str.get(lineOfLog.get("url")).length();
             if (number <= rate && length <= 250){
-            	if(!is_blacked(str.get(lineOfLog.get("domain")))) {
+            	if(str.get(lineOfLog.get("ad_exchange")).isEmpty() && str.get(lineOfLog.get("size")).isEmpty()
+            			&& str.get(lineOfLog.get("domain")).isEmpty() && str.get(lineOfLog.get("os")).isEmpty()){
+            		context.getCounter(WrongLog.EMPTY).increment(1);
+            	}else if(!is_blacked(str.get(lineOfLog.get("domain")))) {
 
             		ArrayList<String> format_log = new ArrayList<String>();
             		format_log.clear();
@@ -137,7 +143,7 @@ public class ReqExtractUrlMapper extends Mapper<LongWritable, Text, Text, Text> 
                 		line = line.concat(val.concat("\t"));
                 	}
                 	multipleOutputs.write(new Text(line.substring(0, line.length() - 1)), new Text("USD"),
-                        "prelytix/req_" + DateTransformer.getDate());
+                        "prelytix/req");
             	} else{
             		context.getCounter(WrongLog.BLACKLIST).increment(1);
             	}

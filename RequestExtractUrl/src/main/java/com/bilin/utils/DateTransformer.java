@@ -59,11 +59,11 @@ public class DateTransformer {
 	
 	public static String getDate(){
 		Calendar c = Calendar.getInstance();
-		c.add(Calendar.DATE, -1);
+		c.add(Calendar.DATE,0);
 		Date d = c.getTime();
 		//String yesterday = "."+c.get(Calendar.YEAR)+(c.get(Calendar.MONTH)+1)+c.get(Calendar.DAY_OF_MONTH);
 		SimpleDateFormat sp = new SimpleDateFormat("yyyyMMdd");
-		String yesterday=sp.format(d);
-		return yesterday;
+		String today=sp.format(d);
+		return today;
 	}
 }

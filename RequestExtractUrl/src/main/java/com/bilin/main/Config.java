@@ -6,12 +6,13 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-
 import java.io.IOException;
 import java.net.URI;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Config {
     private Map<String, Set<String>> keywordsMap = new HashMap<String, Set<String>>();
@@ -122,19 +123,22 @@ public class Config {
                 }
                 black_list_req.clear();
                 while (blk_list.hasMoreTokens()) {
-                	String list_item = blk_list.nextToken();
-                	String[] lists = list_item.split("\\.");
-                	String top_domain;
-                	if(lists.length > 2)
-                		top_domain = lists[lists.length-2].concat(".").concat(lists[lists.length-1]);
+                	
+                	String domain = blk_list.nextToken();
+                    Pattern pattern = Pattern.compile("[^\\.]+(\\.com|\\.net|\\.cn|\\.org|\\.biz|\\.info|\\.cc|\\.tv"
+                			+ "|\\.de|\\.fm|\\.eu|\\.es|\\.fi|\\.in|\\.co|\\.ga|\\.me|\\.io)");
+                	Matcher matcher = pattern.matcher(domain);
+                	String top_domain = null;
+                	if(matcher.find())
+                		top_domain = matcher.group();
                 	else
-                		top_domain = list_item;
+                		continue;
                 	
                 	if(black_list_req.containsKey(top_domain))
-                		black_list_req.get(top_domain).add(list_item);
+                		black_list_req.get(top_domain).add(domain);
                 	else{
                 		Set<String> init = new HashSet<String>();
-                		init.add(list_item);
+                		init.add(domain);
                 		black_list_req.put(top_domain, init);
                 	}
                 }

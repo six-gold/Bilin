@@ -89,7 +89,7 @@ public class ImpMapper extends Mapper<LongWritable, Text, Text, Text> {
 				for(String val : format_log){
 					line = line.concat(val.concat("\t"));
 				}
-				multipleOutputs.write(new Text(line.substring(0,line.length()-1)), new Text("USD"),"prelytix/imp_"+DateTransformer.getDate());
+				multipleOutputs.write(new Text(line.substring(0,line.length()-1)), new Text("USD"),"prelytix/imp");
 //				context.write(new Text(line.substring(0,line.length()-1)), NullWritable.get());
 			}else
 				context.getCounter(WrongLog.OUTBOUND).increment(1);
@@ -115,7 +115,7 @@ public class ImpMapper extends Mapper<LongWritable, Text, Text, Text> {
 		for(String item : format)
 			line_file = line_file.concat(item.concat("\t"));
 		
-		multipleOutputs.write(new Text(line_file.substring(0, line_file.length()-10)), new Text("currency"),"prelytix/imp_"+DateTransformer.getDate());
+		multipleOutputs.write(new Text(line_file.substring(0, line_file.length()-10)), new Text("currency"),"prelytix/imp");
 //		context.write(new Text(line_file.substring(0, line_file.length()-1)), NullWritable.get());
 	}
 }
