@@ -24,6 +24,8 @@ import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class JobConf extends Configured implements Tool {
 
@@ -59,19 +61,32 @@ public class JobConf extends Configured implements Tool {
         MultipleOutputs.setCountersEnabled(job, true);
 
         job.waitForCompletion(true);
-        String[] time_hour = getOneHoursAgoTime().split(" ");
+        
+        String datetime,hour;
+        Pattern pattern = Pattern.compile("\\d{10}");
+        Matcher m = pattern.matcher(args[0]);
+        if(m.find()){
+        	String day_hour=m.group();
+        	hour=day_hour.substring(8);
+        	datetime=day_hour.substring(0, 8);
+        }else{
+        	 String[] time = getOneHoursAgoTime().split(" ");
+             datetime = time[0];
+             hour = time[1];
+        }
         long imp_num = job.getCounters().findCounter("org.apache.hadoop.mapreduce.lib.output.MultipleOutputs","prelytix/imp").getValue();
         long req_num = job.getCounters().findCounter("org.apache.hadoop.mapreduce.lib.output.MultipleOutputs","prelytix/req").getValue();
         long input = job.getCounters().findCounter("org.apache.hadoop.mapred.Task$Counter","MAP_INPUT_RECORDS").getValue();
-        String num_path = "/user/hadoop/prelytix_num_count/"+ time_hour[0];
-//        String num_path = "/home/luo/sample/"+time_hour[0];
+        String num_path = "/user/hadoop/prelytix_num_count/"+ datetime;
+//        String num_path = "/home/luo/sample/"+datetime;
         FileSystem fsR = FileSystem.get(new URI(num_path), conf);
         fsR.createNewFile(new Path(num_path));
         FSDataOutputStream fout = fsR.append(new Path(num_path));
+//        FSDataOutputStream fout = fsR.create(new Path(num_path));
         BufferedWriter out = null;
         try{
         	out = new BufferedWriter(new OutputStreamWriter(fout,"utf-8"));
-        	out.write("date : ".concat(time_hour[0]+" "+ time_hour[1]).concat("\timp count : " + imp_num).concat("\treq count : " + req_num).concat("\tinput count : " + input));
+        	out.write("date : ".concat(datetime +" "+ hour).concat("\timp count : " + imp_num).concat("\treq count : " + req_num).concat("\tinput count : " + input));
         	out.newLine();
         	out.flush();
         }finally{
